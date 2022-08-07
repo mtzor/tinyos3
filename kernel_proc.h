@@ -37,7 +37,7 @@ typedef enum pid_state_e {
  */
 typedef struct process_control_block {
   pid_state  pstate;      /**< @brief The pid state for this PCB */
-
+  uint thread_count;
   PCB* parent;            /**< @brief Parent's pcb. */
   int exitval;            /**< @brief The exit value of the process */
 
@@ -49,6 +49,7 @@ typedef struct process_control_block {
   rlnode children_list;   /**< @brief List of children */
   rlnode exited_list;     /**< @brief List of exited children */
 
+  rlnode thread_list;
   rlnode children_node;   /**< @brief Intrusive node for @c children_list */
   rlnode exited_node;     /**< @brief Intrusive node for @c exited_list */
 
@@ -62,7 +63,26 @@ typedef struct process_control_block {
 
 } PCB;
 
+typedef struct process_thread_control_block {
 
+uint ref_count;//How many threads are waiting for this thread
+TCB *tcb ;//Pointer to the tcb
+rlnode thread_list_node;//Intrusive node to ptcb
+
+Task task;//Pointer to the task function of this thread
+uint argl;//The length of the argument
+void *args;//The pointer to the argument
+
+int exitval;//The value that is returned by the function pointed by task 
+int exited;//Boolean variable ,1 if the thread is exited
+int detached;//Boolean variable , 1 if the thread is detached
+
+CondVar exit_cv;//Condition variable to wait on, when waiting for the thread to exit 
+
+
+
+
+  } PTCB;
 /**
   @brief Initialize the process table.
 

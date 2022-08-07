@@ -23,7 +23,7 @@
 #include "bios.h"
 #include "tinyos.h"
 #include "util.h"
-
+#include "kernel_proc.h"
 /*****************************
  *
  *  The Thread Control Block
@@ -92,30 +92,15 @@ enum SCHED_CAUSE {
 };
 
 /**
-  @brief The thread control block
+  @brief The thread control block  TCB
 
   An object of this type is associated to every thread. In this object
   are stored all the metadata that relate to the thread.
 */
 typedef struct thread_control_block {
-
 	PCB* owner_pcb; /**< @brief This is null for a free TCB */
-
+  PTCB* ptcb;/**< @brief Pointer to its PTCB*/
 	cpu_context_t context; /**< @brief The thread context */
-	Thread_type type; /**< @brief The type of thread */
-	Thread_state state; /**< @brief The state of the thread */
-	Thread_phase phase; /**< @brief The phase of the thread */
-
-	void (*thread_func)(); /**< @brief The initial function executed by this thread */
-
-	TimerDuration wakeup_time; /**< @brief The time this thread will be woken up by the scheduler */
-
-	rlnode sched_node; /**< @brief Node to use when queueing in the scheduler queue */
-	TimerDuration its; /**< @brief Initial time-slice for this thread */
-	TimerDuration rts; /**< @brief Remaining time-slice for this thread */
-
-	enum SCHED_CAUSE curr_cause; /**< @brief The endcause for the current time-slice */
-	enum SCHED_CAUSE last_cause; /**< @brief The endcause for the last time-slice */
 
 #ifndef NVALGRIND
 	unsigned valgrind_stack_id; /**< @brief Valgrind helper for stacks. 
@@ -124,9 +109,25 @@ typedef struct thread_control_block {
 	  Valgrind needs to know which parts of memory are used as stacks, in order to return
 	  meaningful error information. 
 
-	  This field is not relevant to anything in the TinyOS logic.
+	  This field is not relevant to anything in the TinyOS logic and can be ignored.
 	  */
 #endif
+
+	Thread_type type; /**< @brief The type of thread */
+	Thread_state state; /**< @brief The state of the thread */
+	Thread_phase phase; /**< @brief The phase of the thread */
+  uint priority;  /**<@brief The priority of the thread, between zero and NUM_OF_QUEUES-1 */ 
+  
+	void (*thread_func)(); /**< @brief The initial function executed by this thread */
+
+	TimerDuration wakeup_time; /**< @brief The time this thread will be woken up by the scheduler */
+
+	rlnode sched_node; /**< @brief Node to use when queueing in the scheduler lists */
+	TimerDuration its; /**< @brief Initial time-slice for this thread */
+	TimerDuration rts; /**< @brief Remaining time-slice for this thread */
+
+	enum SCHED_CAUSE curr_cause; /**< @brief The endcause for the current time-slice */
+	enum SCHED_CAUSE last_cause; /**< @brief The endcause for the last time-slice */
 
 } TCB;
 
@@ -152,33 +153,30 @@ typedef struct core_control_block {
 	TCB* current_thread; /**< @brief Points to the thread currently owning the core */
 	TCB* previous_thread; /**< @brief Points to the thread that previously owned the core */
 	TCB idle_thread; /**< @brief Used by the scheduler to handle the core's idle thread */
+	sig_atomic_t preemption; /**< @brief Marks preemption, used by the locking code */
 
 } CCB;
 
 /** @brief the array of Core Control Blocks (CCB) for the kernel */
 extern CCB cctx[MAX_CORES];
 
+/** @brief The current core's CCB */
+#define CURCORE (cctx[cpu_core_id])
 
 /** 
   @brief The current thread.
 
-  This function returns the TCB of the calling thread. Via this function,
-  a system call can identify the process executing it, and all other information.
-
-  For performance reasons, it is advised to call this function
-  only once in each system call.
-
-  @returns a pointer to the TCB of the caller.
+  This is a pointer to the TCB of the thread currently executing on this core.
 */
-TCB* cur_thread();
+#define CURTHREAD (CURCORE.current_thread)
 
 /** 
-  @brief The current process.
+  @brief The current thread.
 
   This is a pointer to the PCB of the owner process of the current thread, 
   i.e., the thread currently executing on this core.
 */
-#define CURPROC (cur_thread()->owner_pcb)
+#define CURPROC (CURTHREAD->owner_pcb)
 
 /**
   @brief A timeout constant, denoting no timeout for sleep.

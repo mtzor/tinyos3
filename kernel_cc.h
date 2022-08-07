@@ -82,10 +82,12 @@ void kernel_sleep(Thread_state state, enum SCHED_CAUSE cause);
 
 
 
-/** @brief Set the preemption status for the current core.
+/** @brief Set the preemption status for the current thread.
 
- 	Preemption is disabled by disabling interrupts. 
-
+ 	Depending on the value of the argument, this function will set preemption on 
+ 	or off. 
+ 	Preemption is disabled by disabling interrupts. This function is usually called 
+ 	via the convenience macros @c preempt_on and @c preempt_off.
 	A typical non-preemptive section is declared as
 	@code
 	int preempt = preempt_off;
@@ -95,17 +97,33 @@ void kernel_sleep(Thread_state state, enum SCHED_CAUSE cause);
 	if(preempt) preempt_on;
 	@endcode
 
+	@param preempt  the new preemption status 
  	@returns the previous preemption status, where 0 means that preemption was previously off,
  	and 1 means that it was on.
 
+
+ 	@see preempt_off
  	@see preempt_on
 */
-#define preempt_off  cpu_disable_interrupts()
+int set_core_preemption(int preempt);
+
+/** @brief Get the current preemption status.
+
+	@return the current preemption status for this core, 0 means no preemption and 1 means
+	preemption.
+	@see set_core_preemption
+ */
+int get_core_preemption();
 
 /** @brief Easily turn preemption off.
 	@see set_core_preemption
  */
-#define preempt_on  cpu_enable_interrupts()
+#define preempt_off  (set_core_preemption(0))
+
+/** @brief Easily turn preemption off.
+	@see set_core_preemption
+ */
+#define preempt_on  (set_core_preemption(1))
 
 
 #endif
