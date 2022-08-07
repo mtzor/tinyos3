@@ -1,4 +1,5 @@
 
+
 #ifndef __TINYOS_H__
 #define __TINYOS_H__
 
@@ -440,7 +441,7 @@ int Read(Fid_t fd, char *buf, unsigned int size);
    The @c buf and @c size arguments are, respectively, a buffer into which 
    input data can be placed and the  size  of that  buffer. 
 
-   As its function result, the @c Read function should return the number 
+   As its function result, the @c Write function should return the number 
    of bytes copied into @c buf, or @c -1 on error. The call may return fewer 
    bytes than @c size, but at least 1. 
 

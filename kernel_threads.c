@@ -66,6 +66,10 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
 
   rlnode* fail=NULL;//initialising node to NULL
 
+  if(tidc->exited==1){
+    return 0;
+  }
+
   fail=rlist_find(&CURPROC->thread_list, tidc, fail);//trying to find tid in process thread list
 
   if(fail==NULL) // if node with tid  does not exist in list
@@ -74,7 +78,7 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
   if(tidc==CURTHREAD->ptcb)// cannot join the current thread
   return -1;
 
-  if(tidc->exited==1||tidc->detached==1)// cannot join a detached or exited thread
+  if(tidc->detached==1)// cannot join a detached or exited thread
   return -1;
 
   tidc->ref_count++;//increasing the tcbs reference count to prevent exit from releasing it 
@@ -105,14 +109,10 @@ int sys_ThreadJoin(Tid_t tid, int* exitval)
    return 0;
 }
   
-  if(tidc->detached==1){// thread has been detached during join
-    
-      rlist_remove(&tidc->thread_list_node);
-
-      release_PTCB(tidc);
+  if(tidc->detached==1)// thread has been detached during join
     return -1;
-  }
-    return -1;
+  
+return -1;
 
   
 }

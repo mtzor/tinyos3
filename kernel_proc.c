@@ -20,6 +20,13 @@
 
 #define PROCESS_THREAD_PTCB_SIZE   (sizeof(PTCB))
 
+static file_ops system_info_fops = {
+  .Open = NULL,
+  .Read =  sys_System_Info_Read,
+  .Write = sys_Info_Void,
+  .Close = sys_System_Info_Close
+};
+
 PCB PT[MAX_PROC];
 unsigned int process_count;
 
@@ -398,6 +405,84 @@ void sys_Exit(int exitval)
 
 Fid_t sys_OpenInfo()
 {
-	return NOFILE;
-}
+    Fid_t fid[1];
+    FCB* fcb[1];
 
+    if(! FCB_reserve(1, fid,fcb))
+    return NOFILE ;
+
+    SICB* sicb=(SICB*)xmalloc(sizeof(SICB));//Allocating space for a system info control block
+
+    if(sicb==NULL)
+    return NOFILE ;
+
+    procinfo* pinfo=(procinfo*)xmalloc(sizeof(procinfo));//Allocating space for process info control block
+
+    if(pinfo==NULL)
+    return NOFILE ;
+
+    sicb->curinfo=*(pinfo);
+    sicb->cursor=0;
+
+    fcb[0]->streamobj=sicb;
+    fcb[0]->streamfunc=&system_info_fops;    
+
+
+	   return fid[0];
+}
+//A function that does nothing 
+ int sys_Info_Void(void* stream_object, char *buf, unsigned int size){
+    return -1;
+ 
+ }
+
+ int sys_System_Info_Close(void* streamobj){
+    
+    SICB* sicb=(SICB*)streamobj;
+
+    if(sicb==NULL)
+      return -1 ;
+
+    free(sicb);//deallocating the system info control block 
+
+    return 0;
+ }
+
+ int sys_System_Info_Read(void* stream_object, char *buf, unsigned int size){
+  
+  SICB* sicb=(SICB*)stream_object;
+
+    if(sicb==NULL)
+      return -1 ;
+
+  int i=sicb->cursor;
+
+  //finding the next process that is free 
+  for(;i<MAX_PROC;i++){
+
+    if((&PT[i])->pstate!=FREE){
+      break;
+    }
+
+  }
+
+  if(i==MAX_PROC)//If we have reached the end of the process table 
+    return 0;
+
+  sicb->cursor=(i+1);
+ 
+  //Initializing the variables of the procinfo
+  
+  sicb->curinfo.pid=get_pid(&PT[i]);
+  sicb->curinfo.ppid=get_pid((&PT[i])->parent);
+  sicb->curinfo.alive=((&PT[i])->pstate==ALIVE)?1:0;
+  sicb->curinfo.thread_count=(&PT[i])->thread_count;
+  sicb->curinfo.main_task=(&PT[i])->main_task;
+  sicb->curinfo.argl=(&PT[i])->argl;
+
+  memcpy(sicb->curinfo.args,(&PT[i])->args,(&PT[i])->argl);
+
+  memcpy(buf,(char*) &(sicb->curinfo),size);//Converting it to a byte array and passing to buf 
+
+  return size;
+ }

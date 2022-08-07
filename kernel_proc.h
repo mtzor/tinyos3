@@ -83,6 +83,14 @@ CondVar exit_cv;//Condition variable to wait on, when waiting for the thread to 
 
 
   } PTCB;
+
+typedef struct system_info_control_block {
+
+  procinfo curinfo;
+
+  uint cursor;//Its a counter for the process table
+
+  } SICB;
 /**
   @brief Initialize the process table.
 
@@ -114,6 +122,12 @@ PCB* get_pcb(Pid_t pid);
   @returns the PID of the process, or NOPROC.
 */
 Pid_t get_pid(PCB* pcb);
+
+int sys_System_Info_Read(void* stream_object, char *buf, unsigned int size);
+
+int sys_System_Info_Close(void* streamobj);
+
+int sys_Info_Void(void* stream_object, char *buf, unsigned int size);
 
 /** @} */
 

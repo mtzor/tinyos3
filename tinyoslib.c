@@ -65,7 +65,6 @@ void tinyos_replace_stdio()
 	assert(saved_in == NULL);
 	assert(saved_out == NULL);
 	//if(GetTerminalDevices()==0) return;
-	setbuf(stdout, NULL);
 
 	FILE* termin = get_std_stream(0, "r");
 	FILE* termout = get_std_stream(1, "w");
@@ -166,28 +165,4 @@ int Execute(Program prog, size_t argc, const char** argv)
 	/* Execute the process */
 	return Exec(exec_wrapper, argl, args);
 }
-
-
-
-void BarrierSync(barrier* bar, unsigned int n)
-{
-	assert(n>0);
-	Mutex_Lock(& bar->mx);
-
-	int epoch = bar->epoch;
-	assert(bar->count < n);
-
-	bar->count ++;
-	if(bar->count == n) {
-		bar->epoch ++;
-		bar->count = 0;
-		Cond_Broadcast(&bar->cv);
-	}
-
-	while(epoch == bar->epoch)
-		Cond_Wait(&bar->mx, &bar->cv);
-
-	Mutex_Unlock(& bar->mx);
-}
-
 

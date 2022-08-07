@@ -99,9 +99,7 @@
 	cause the rest of the test to be skipped, even if it fails. It does however print
 	a very nice message for you to read. Even better, using @c ASSERT_MSG(...) 
 	you can have your own message printed, adding more information to help you
-	understand better the cause of the problem. Furthermore, when we want to check
-	that we should not reach some place, we can use @c FAIL(...) that also prints a
-	message.
+	understand better the cause of the problem.
 
 	It is not a very good practice to print large amounts of messages from a test.
 	But, if you really want to print some data, you can use the @c MSG(...) function.
@@ -269,17 +267,6 @@ extern int FLAG_FAILURE;
  ASSERT_MSG(expr, "%s(%d): ASSERT failed: %s \n",__FILE__, __LINE__, #expr)
 
 
-/** 
-	@brief Fail the test printing a message.
-
-	This macro is similar to @c ASSERT_MSG(0, "...message...").
-
-	A message with the filename and line,  followed by whatever 
-	'...messsage...' we provided, is printed to the console.
-*/
-#define FAIL(failure_message)  \
- ASSERT_MSG(0, "%s(%d): FAILURE: %s \n",__FILE__, __LINE__, (failure_message))
-
 
 
 /* 
@@ -324,7 +311,7 @@ typedef struct Test
 	Test_type type;	    				/**< Bare, boot or suite */
 	const char* name;   				/**< Test name */
 	union {
-		void (*bare)(void*);
+		void (*bare)(void);
 		Task boot;
 		const struct Test ** suite;
 	};									/**< Test function, or list of tests */

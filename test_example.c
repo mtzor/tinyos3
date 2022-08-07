@@ -3,7 +3,7 @@
 
 BARE_TEST(my_test, "This is a silly test")
 {
-  ASSERT(1+1==2);
+  ASSERT("msafrajs"&&1+1==2);
   ASSERT(2*2*2 < 10);
 }
 
